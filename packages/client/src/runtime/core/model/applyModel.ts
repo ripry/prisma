@@ -84,8 +84,14 @@ function modelActionsLayer(client: Client, dmmfModelName: string): CompositeProx
     getPropertyValue(key) {
       const dmmfActionName = key as DMMF.ModelAction
 
-      let requestFn = (params: InternalRequestParams) => client._request(params)
-      requestFn = adaptErrors(dmmfActionName, dmmfModelName, requestFn)
+      const requestFn = (params: InternalRequestParams) => {
+        const internalRequestFn = (params: InternalRequestParams) => client._request(params)
+        if (DMMF.ModelAction[params.action] && params.model) {
+          const adaptedRequestFn = adaptErrors(DMMF.ModelAction[params.action], params.model, internalRequestFn)
+          return adaptedRequestFn(params)
+        }
+        return internalRequestFn(params)
+      }
 
       // we return a function as the model action that we want to expose
       // it takes user args and executes the request in a Prisma Promise
